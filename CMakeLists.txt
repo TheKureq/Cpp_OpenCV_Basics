@@ -9,10 +9,15 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(OpenCV REQUIRED)
+
 
 add_executable(CameraManipulator src/CameraManipulator.cpp)
 
 ament_target_dependencies(CameraManipulator rclcpp std_msgs)
+
+target_link_libraries(CameraManipulator ${OpenCV_LIBS})
+
 
 install(TARGETS
   CameraManipulator

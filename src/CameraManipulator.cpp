@@ -1,34 +1,52 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include <opencv2/opencv.hpp>
 
-class MyNode : public rclcpp::Node
+class CameraManipulator : public rclcpp::Node
 {
 public:
-    MyNode() : Node("CameraManipulator")
+    CameraManipulator() : Node("CameraManipulator")
     {
-        publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
+        
+        cap.open(0);
+
+        if (!cap.isOpened())
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to open camera.");
+            return;
+        }
+
         timer_ = this->create_wall_timer(
-            std::chrono::seconds(1),
-            std::bind(&MyNode::timer_callback, this));
+            std::chrono::milliseconds(30),
+            std::bind(&CameraManipulator::timer_callback, this));
     }
 
 private:
     void timer_callback()
     {
-        auto message = std_msgs::msg::String();
-        message.data = "Hello, ROS 2!";
-        RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-        publisher_->publish(message);
+
+        cv::Mat frame;
+
+        cap >> frame;
+
+        if (frame.empty())
+        {
+            RCLCPP_ERROR(this->get_logger(), "Empty frame captured.");
+            return;
+        }
+
+        cv::imshow("Camera Stream", frame);
+        cv::waitKey(1);
     }
 
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
     rclcpp::TimerBase::SharedPtr timer_;
+    cv::VideoCapture cap;
 };
 
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<MyNode>());
+    rclcpp::spin(std::make_shared<CameraManipulator>());
     rclcpp::shutdown();
     return 0;
 }
